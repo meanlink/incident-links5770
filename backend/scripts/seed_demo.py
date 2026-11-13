@@ -21,6 +21,10 @@ def seed():
             rows=seed_records()
             d=Dataset(name=m['dataset_name'],source=m['short']+'-202611.csv',records=rows,checksum=checksum(rows),created_at=time.time())
             db.add(d); db.flush()
+            d.root_id=d.id; d.parent_id=d.id
+            d.effective_records=[dict(r) for r in rows]
+            d.effective_checksum=d.checksum
+            db.flush()
         if not db.scalar(select(Job).where(Job.name=='基线复核 · '+m['name'])):
             params={p['key']:p['default'] for p in m.get('parameters',[])}
             result=analyze(d.records,params)

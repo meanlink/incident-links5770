@@ -3,8 +3,11 @@
 时序共现关联的真实业务分析小型项目。完整模拟客户、痛点、上下游、算法公式与一天工作剧本见 [BUSINESS.md](BUSINESS.md)。
 
 ## 模块与业务流程
-数据接入（JSON/CSV、字段验证、批次指纹）→ 参数化分析（异步 Python worker）→ 结果复核（指标、图形、明细、解释、批准）→ 定时分发（本地收件箱、CSV/JSON、SHA256）；另有业务总览和审计轨迹。
-三个贯穿全栈的实体：Dataset 数据批次、Job 分析任务、Report 分发计划；辅助 User、Audit、Delivery。
+数据接入（JSON/CSV、字段验证、批次指纹、基于版本的增量合并）→ 参数化分析（异步 Python worker）→ 结果复核（指标、图形、明细、解释、批准）→ 定时分发（本地收件箱、CSV/JSON、SHA256）；另有业务总览和审计轨迹。
+三个贯穿全栈的实体：Dataset 数据批次、Job 分析任务、Report 分发计划；辅助 User、Audit、Delivery，以及增量接入的 IngestBatch（接入台账）与 EventJournal（事件版本台账）。
+
+### 增量接入（更正/撤销/补发）
+在数据接入页选择任意批次即可增量接入。增量记录为 JSON/CSV，每条含 `event_id`、整数 `version`，可选 `op`（默认 `upsert`，撤销用 `retract`）。后端按事件版本合并：同版本同内容重复补发计入忽略、乱序不影响最终有效事件；同版本内容不同会在 409 响应中列出冲突并整批不接入；撤销写墓碑且旧版不能复活。每次接入生成派生批次（不改动旧批次及其分析结果），返回并在页面展示新增/更正/撤销/忽略数量与来源，链路与版本台账可通过 `/datasets/{id}/ingest-batches`、`/datasets/{id}/journal`、`/datasets/{id}/lineage` 查询。
 
 ## 快速启动
 ```bash
